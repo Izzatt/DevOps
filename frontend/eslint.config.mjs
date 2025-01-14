@@ -3,7 +3,6 @@ import pluginJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
 
-
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"]},
@@ -11,4 +10,10 @@ export default [
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   pluginReact.configs.flat.recommended,
+  {settings: { react: { version: "detect" }}},
+  {rules: {
+    "react/react-in-jsx-scope": "off", // Отключение правила для новых версий React
+    "no-unused-vars": "warn",          // Предупреждения о неиспользуемых переменных
+    "no-console": "warn"               // Предупреждения при использовании console.log
+  }}
 ];

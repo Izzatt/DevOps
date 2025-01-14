@@ -13,7 +13,7 @@ pipeline {
                 stage('Линтинг backend') {
                     steps {
                         dir('backend') {
-                            sh 'flake8 app'
+                            sh 'flake8 app.py'
                         }
                     }
                 }
