@@ -7,6 +7,12 @@ pipeline {
         KUBECONFIG = credentials('kubeconfig-file') // Файл конфигурации Kubernetes
     }
     stages {
+        stage('Setup Environment') {
+            steps {
+                sh 'pip3 install --user flake8'
+                sh 'npm install --global npm@latest'
+                }
+            }
         // 1. Линтинг
         stage('Линтинг кода') {
             parallel {

@@ -7,3 +7,4 @@ gevent-websocket
 python-dotenv
 prometheus-client==0.16.0
 gevent==22.10.2
+pytest
