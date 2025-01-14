@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      # Kubernetes Pods
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          action: keep
+          regex: .*
+
+      # React Frontend
+      - job_name: 'frontend'
+        static_configs:
+        scheme: http
+        - targets: ['192.168.49.2:30002']
+
+      # Node Exporter
+      - job_name: 'node-exporter'
+        scrape_interval: 15s
+        static_configs:
+        - targets: ['node-exporter.monitoring.svc.cluster.local:9100']
+
+      # Kube State Metrics
+      - job_name: 'kube-state-metrics'
+        static_configs:
+        - targets: ['kube-state-metrics.monitoring.svc.cluster.local:8080']
+       
+      - job_name: 'flask-api'
+        scrape_interval: 5s
+        static_configs:
+          - targets: ['192.168.49.2:30001']
+        tls_config:
+          insecure_skip_verify: true

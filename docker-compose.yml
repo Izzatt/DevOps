@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - 5000:5000
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - appnetwork
+    environment:
+      - FLASK_DEBUG=0
+      - MONGO_URI=mongodb+srv://izzat:dbpa%24%24word1234@cluster0.cvhz3.mongodb.net/?retryWrites=true&w=majority
+      - SECRET_KEY=default-secret-key
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - 80:80
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - appnetwork
+    depends_on:
+      - backend
+
+networks:
+  appnetwork:
+    driver: bridge

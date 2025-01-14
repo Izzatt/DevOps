@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# Environment variables
+.env
+*.env
+
+# Python-specific cache files
+*.egg-info/
+.eggs/
+
+# Flask / Gunicorn logs
+*.log
+*.log.*
+*.pid
+*.pid.*
+
+# Docker files and cache
+*.dockerignore
+docker-compose.override.yml
+__pycache__/
+*.swp
+.DS_Store
+*~
+*.bak
+*.tmp
+
+# Pytest
+.cache/
+.coverage
+*.cover
+coverage.*
+nosetests.xml
+tests.xml
+*.pyo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Database files
+*.db
+*.sqlite3
+
+# Other IDE-specific files
+.idea/
+.vscode/
