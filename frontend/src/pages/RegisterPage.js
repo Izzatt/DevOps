@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import '../styles.css';
+import PropTypes from 'prop-types';
 
 function RegisterPage({ navigateToLogin }) {
     const [username, setUsername] = useState('');
@@ -78,5 +78,9 @@ function RegisterPage({ navigateToLogin }) {
         </div>
     );
 }
+
+RegisterPage.propTypes = {
+    navigateToLogin: PropTypes.func.isRequired,
+};
 
 export default RegisterPage;

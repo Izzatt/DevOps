@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../styles.css';
+import PropTypes from 'prop-types';
 
 function LoginPage({ navigateToRegister }) {
     const [username, setUsername] = useState('');
@@ -51,7 +52,7 @@ function LoginPage({ navigateToRegister }) {
                 />
                 <button type="submit">Login</button>
                 <div className="form-footer">
-                    Don't have an account?{' '}
+                    Don&apos;t have an account?{' '}
                     <a
                         href="#"
                         onClick={(e) => {
@@ -66,5 +67,9 @@ function LoginPage({ navigateToRegister }) {
         </div>
     );
 }
+
+LoginPage.propTypes = {
+    navigateToRegister: PropTypes.func.isRequired, // Обязательно указываем тип и что это поле обязательно
+};
 
 export default LoginPage;

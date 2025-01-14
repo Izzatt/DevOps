@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 
@@ -21,5 +22,9 @@ function AuthPage({ onLoginSuccess }) {
         </div>
     );
 }
+
+AuthPage.propTypes = {
+    onLoginSuccess: PropTypes.func.isRequired, // Обязательное поле
+};
 
 export default AuthPage;
