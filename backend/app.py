@@ -1,16 +1,16 @@
+from bson import ObjectId
+from pymongo.mongo_client import MongoClient
+from werkzeug.security import generate_password_hash, check_password_hash
+from prometheus_client import Counter, Histogram, generate_latest
+from flask_socketio import SocketIO, emit, join_room
+from flask_cors import CORS
+from flask import Flask, request, jsonify, Response
+from dotenv import load_dotenv
+import time
+import os
 from gevent import monkey
 monkey.patch_all()
 
-import os
-import time
-from dotenv import load_dotenv
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room
-from prometheus_client import Counter, Histogram, generate_latest
-from werkzeug.security import generate_password_hash, check_password_hash
-from pymongo.mongo_client import MongoClient
-from bson import ObjectId
 
 # Инициализация приложения Flask
 app = Flask(__name__)
@@ -36,11 +36,11 @@ except Exception as e:
 
 # Метрики Prometheus
 REQUEST_COUNT = Counter(
-    'api_request_count', 'Total API Requests', ['method', 'endpoint', 'status_code']
-)
+    'api_request_count', 'Total API Requests', [
+        'method', 'endpoint', 'status_code'])
 REQUEST_LATENCY = Histogram(
-    'api_request_latency_seconds', 'Latency of API Requests', ['method', 'endpoint']
-)
+    'api_request_latency_seconds', 'Latency of API Requests', [
+        'method', 'endpoint'])
 
 
 @app.before_request
@@ -54,8 +54,9 @@ def log_request(response):
     """Логирование метрик после обработки запроса."""
     latency = time.time() - request.start_time
     REQUEST_COUNT.labels(
-        method=request.method, endpoint=request.path, status_code=response.status_code
-    ).inc()
+        method=request.method,
+        endpoint=request.path,
+        status_code=response.status_code).inc()
     REQUEST_LATENCY.labels(
         method=request.method, endpoint=request.path
     ).observe(latency)
@@ -79,7 +80,8 @@ def register():
         return jsonify({'error': 'Username already exists'}), 400
 
     hashed_password = generate_password_hash(password)
-    users_collection.insert_one({'username': username, 'password': hashed_password})
+    users_collection.insert_one(
+        {'username': username, 'password': hashed_password})
     return jsonify({'message': 'User registered successfully!'})
 
 
@@ -92,7 +94,8 @@ def login():
 
     user = users_collection.find_one({'username': username})
     if user and check_password_hash(user['password'], password):
-        return jsonify({'message': 'Login successful!', 'user_id': str(user["_id"])})
+        return jsonify({'message': 'Login successful!',
+                       'user_id': str(user["_id"])})
     return jsonify({'error': 'Invalid credentials'}), 401
 
 
@@ -122,7 +125,8 @@ def get_chats():
 def get_users():
     """Получение списка всех пользователей."""
     users = users_collection.find({}, {'_id': 1, 'username': 1})
-    return jsonify([{'id': str(user['_id']), 'username': user['username']} for user in users])
+    return jsonify(
+        [{'id': str(user['_id']), 'username': user['username']} for user in users])
 
 
 @app.route('/api/chats', methods=['POST'])
@@ -173,7 +177,8 @@ def get_chat_participants(chat_id):
                 {'_id': 1, 'username': 1}
             )
             if user:
-                participants.append({'id': str(user['_id']), 'username': user['username']})
+                participants.append(
+                    {'id': str(user['_id']), 'username': user['username']})
 
         return jsonify(participants)
     except Exception as e:
@@ -191,7 +196,8 @@ def fetch_messages(chat_id):
 
         messages_with_usernames = []
         for message in chat.get('messages', []):
-            sender = users_collection.find_one({'_id': ObjectId(message['sender_id'])})
+            sender = users_collection.find_one(
+                {'_id': ObjectId(message['sender_id'])})
             messages_with_usernames.append({
                 'sender_username': sender['username'] if sender else 'Unknown',
                 'content': message['content']
