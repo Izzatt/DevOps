@@ -2,7 +2,7 @@ from bson import ObjectId
 from pymongo.mongo_client import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from prometheus_client import Counter, Histogram, generate_latest
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, join_room
 from flask_cors import CORS
 from flask import Flask, request, jsonify, Response
 from dotenv import load_dotenv
@@ -111,7 +111,8 @@ def get_chats():
             'participants': [
                 {
                     'id': str(participant_id),
-                    'username': users_collection.find_one({'_id': ObjectId(participant_id)})['username']
+                    'username': users_collection.find_one
+                    ({'_id': ObjectId(participant_id)})['username']
                 }
                 for participant_id in chat['participants']
             ]
@@ -125,8 +126,8 @@ def get_chats():
 def get_users():
     """Получение списка всех пользователей."""
     users = users_collection.find({}, {'_id': 1, 'username': 1})
-    return jsonify(
-        [{'id': str(user['_id']), 'username': user['username']} for user in users])
+    return jsonify([{'id': str(user['_id']),
+                     'username': user['username']} for user in users])
 
 
 @app.route('/api/chats', methods=['POST'])
@@ -225,12 +226,14 @@ def handle_message(data):
     if chat_id and message and sender_id:
         chats_collection.update_one(
             {'_id': ObjectId(chat_id)},
-            {'$push': {'messages': {'sender_id': sender_id, 'content': message}}}
-        )
-        emit(
-            'message',
-            {'chat_id': chat_id, 'sender_id': sender_id, 'message': message},
-            room=chat_id
+            {
+                '$push': {
+                    'messages': {
+                        'sender_id': sender_id,
+                        'content': message
+                    }
+                }
+            }
         )
 
 
