@@ -28,7 +28,6 @@ pipeline {
                 }
             }
         }
-            PATH = "/home/izzat/.local/bin:$PATH"
         // 2. Юнит-тесты
         stage('Запуск юнит-тестов') {
             steps {
