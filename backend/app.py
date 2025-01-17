@@ -27,12 +27,6 @@ db = client['chat_app']
 users_collection = db['users']
 chats_collection = db['chats']
 
-try:
-    client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    exit(1)
 
 # Метрики Prometheus
 REQUEST_COUNT = Counter(
