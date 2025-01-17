@@ -1,22 +1,31 @@
+import sys
+sys.setrecursionlimit(28000)
 import pytest
-from app import app, users_collection, chats_collection
+from app import create_app, users_collection, chats_collection
 from werkzeug.security import generate_password_hash
 from bson import ObjectId
 
 
 @pytest.fixture
-def client():
+def app():
     """Создает тестовый клиент Flask"""
-    with app.test_client() as client:
-        yield client
+    app = create_app()
+    yield app
 
 
 @pytest.fixture(autouse=True)
-def setup_database():
+def setup_database(app):
     """Очистка базы данных перед каждым тестом"""
-    users_collection.delete_many({})
-    chats_collection.delete_many({})
+    with app.app_context():
+        users_collection.delete_many({})
+        chats_collection.delete_many({})
     yield
+
+
+@pytest.fixture
+def client(app):
+    """Создает тестовый клиент Flask"""
+    return app.test_client()
 
 
 def test_user_registration(client):
@@ -65,8 +74,10 @@ def test_invalid_user_login(client):
 
 
 def test_start_chat(client):
-    user1_id = str(users_collection.insert_one({'username': 'user1', 'password': 'pass1'}).inserted_id)
-    user2_id = str(users_collection.insert_one({'username': 'user2', 'password': 'pass2'}).inserted_id)
+    user1_id = str(users_collection.insert_one(
+        {'username': 'user1', 'password': 'pass1'}).inserted_id)
+    user2_id = str(users_collection.insert_one(
+        {'username': 'user2', 'password': 'pass2'}).inserted_id)
 
     response = client.post('/api/chats', json={
         'user_id': user1_id,
