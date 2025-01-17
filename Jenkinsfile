@@ -28,15 +28,6 @@ pipeline {
                 }
             }
         }
-        stage('Установка зависимостей') {
-            steps {
-                script {
-                    dir('backend')
-                    // Установка зависимостей из requirements.txt
-                        sh 'pip install -r requirements.txt'
-                }
-            }
-        }
         // 2. Юнит-тесты
         stage('Запуск юнит-тестов') {
             steps {
