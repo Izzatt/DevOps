@@ -5,6 +5,7 @@ pipeline {
         DOCKER_IMAGE_BACKEND = 'izya69/backend:latest' // Имя образа для backend
         DOCKER_IMAGE_FRONTEND = 'izya69/frontend:latest' // Имя образа для frontend
         KUBECONFIG = credentials('kubeconfig-file') // Файл конфигурации Kubernetes
+        PATH = "/home/izzat/.local/bin:$PATH"
     }
     stages {
         // 1. Линтинг
@@ -27,9 +28,7 @@ pipeline {
                 }
             }
         }
-        environment {
             PATH = "/home/izzat/.local/bin:$PATH"
-        }
         // 2. Юнит-тесты
         stage('Запуск юнит-тестов') {
             steps {
