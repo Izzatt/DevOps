@@ -32,7 +32,7 @@ pipeline {
         stage('Запуск юнит-тестов') {
             steps {
                 dir('backend') {
-                    sh 'pytest tests'
+                    sh '/home/izzat/.local/lib/python3.10/site-packages/pytest tests'
                 }
             }
         }
