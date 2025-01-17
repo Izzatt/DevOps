@@ -36,6 +36,7 @@ pipeline {
                         sh 'pip install -r requirements.txt'
                 }
             }
+        }
         // 2. Юнит-тесты
         stage('Запуск юнит-тестов') {
             steps {
