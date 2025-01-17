@@ -28,7 +28,7 @@ pipeline {
             }
         }
         environment {
-            PATH = "/home/izzat/.local/lib/python3.10/site-packages/pytest:$PATH"
+            PATH = "/home/izzat/.local/bin:$PATH"
         }
         // 2. Юнит-тесты
         stage('Запуск юнит-тестов') {
