@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE_BACKEND = 'izya69/backend:latest' // Имя образа для backend
         DOCKER_IMAGE_FRONTEND = 'izya69/frontend:latest' // Имя образа для frontend
         KUBECONFIG = credentials('kubeconfig-file') // Файл конфигурации Kubernetes
-        PATH = "/home/izzat/.local/bin:$PATH"
+        PATH = "/home/izzat/.local/lib/python3.10/site-packages/pytest:$PATH"
     }
     stages {
         // 1. Линтинг
