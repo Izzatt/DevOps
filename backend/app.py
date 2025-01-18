@@ -1,3 +1,5 @@
+from gevent import monkey  # noqa: E402
+monkey.patch_all()  # noqa: E402
 from bson import ObjectId
 from pymongo.mongo_client import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,8 +10,6 @@ from flask import Flask, request, jsonify, Response
 from dotenv import load_dotenv
 import time
 import os
-from gevent import monkey
-monkey.patch_all()
 
 
 # Инициализация приложения Flask

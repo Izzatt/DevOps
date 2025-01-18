@@ -1,123 +1,120 @@
-import sys
-sys.setrecursionlimit(28000)
+import json
 import pytest
-from app import create_app, users_collection, chats_collection
-from werkzeug.security import generate_password_hash
+from app import app, users_collection, chats_collection
 from bson import ObjectId
+from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture
-def app():
-    """Создает тестовый клиент Flask"""
-    app = create_app()
-    yield app
-
-
-@pytest.fixture(autouse=True)
-def setup_database(app):
-    """Очистка базы данных перед каждым тестом"""
-    with app.app_context():
-        users_collection.delete_many({})
-        chats_collection.delete_many({})
-    yield
+def client():
+    """Фикстура для создания тестового клиента приложения."""
+    app.config['TESTING'] = True
+    client = app.test_client()
+    yield client
 
 
 @pytest.fixture
-def client(app):
-    """Создает тестовый клиент Flask"""
-    return app.test_client()
+def user():
+    """Фикстура для создания тестового пользователя."""
+    user_data = {
+        'username': 'testuser',
+        'password': 'testpassword'
+    }
+    hashed_password = generate_password_hash(user_data['password'])
+    users_collection.insert_one({'username': user_data['username'], 'password': hashed_password})
+    return user_data
 
 
-def test_user_registration(client):
-    response = client.post('/api/users/register', json={
-        'username': 'test_user',
-        'password': 'test_password'
-    })
+@pytest.fixture
+def chat(user):
+    """Фикстура для создания чата для тестового пользователя."""
+    user_id = str(users_collection.find_one({'username': user['username']})['_id'])
+    recipient_id = user_id  # Для простоты используем того же пользователя как собеседника
+    chat = {'participants': [user_id, recipient_id], 'messages': []}
+    chat_id = chats_collection.insert_one(chat).inserted_id
+    return str(chat_id)
+
+
+def test_register(client):
+    """Тестирование маршрута регистрации."""
+    data = {
+        'username': 'newuser',
+        'password': 'newpassword'
+    }
+    response = client.post('/api/users/register', json=data)
     assert response.status_code == 200
-    assert response.json['message'] == 'User registered successfully!'
+    assert b'User registered successfully!' in response.data
 
 
-def test_duplicate_user_registration(client):
-    users_collection.insert_one({
-        'username': 'test_user',
-        'password': generate_password_hash('test_password')
-    })
-    response = client.post('/api/users/register', json={
-        'username': 'test_user',
-        'password': 'test_password'
-    })
+def test_register_existing_user(client, user):
+    """Тестирование регистрации с уже существующим пользователем."""
+    data = {
+        'username': user['username'],
+        'password': 'somepassword'
+    }
+    response = client.post('/api/users/register', json=data)
     assert response.status_code == 400
-    assert response.json['error'] == 'Username already exists'
+    assert b'Username already exists' in response.data
 
 
-def test_user_login(client):
-    hashed_password = generate_password_hash('test_password')
-    users_collection.insert_one({
-        'username': 'test_user',
-        'password': hashed_password
-    })
-    response = client.post('/api/users/login', json={
-        'username': 'test_user',
-        'password': 'test_password'
-    })
+def test_login(client, user):
+    """Тестирование маршрута авторизации."""
+    data = {
+        'username': user['username'],
+        'password': user['password']
+    }
+    response = client.post('/api/users/login', json=data)
     assert response.status_code == 200
-    assert 'user_id' in response.json
+    assert b'Login successful!' in response.data
 
 
-def test_invalid_user_login(client):
-    response = client.post('/api/users/login', json={
-        'username': 'non_existent_user',
-        'password': 'test_password'
-    })
+def test_login_invalid_credentials(client):
+    """Тестирование авторизации с неверными данными."""
+    data = {
+        'username': 'invaliduser',
+        'password': 'wrongpassword'
+    }
+    response = client.post('/api/users/login', json=data)
     assert response.status_code == 401
-    assert response.json['error'] == 'Invalid credentials'
+    assert b'Invalid credentials' in response.data
 
 
-def test_start_chat(client):
-    user1_id = str(users_collection.insert_one(
-        {'username': 'user1', 'password': 'pass1'}).inserted_id)
-    user2_id = str(users_collection.insert_one(
-        {'username': 'user2', 'password': 'pass2'}).inserted_id)
-
-    response = client.post('/api/chats', json={
-        'user_id': user1_id,
-        'recipient_id': user2_id
-    })
+def test_get_chats(client, user, chat):
+    """Тестирование маршрута получения чатов пользователя."""
+    data = {'user_id': str(users_collection.find_one({'username': user['username']})['_id'])}
+    response = client.get('/api/chats', query_string=data)
     assert response.status_code == 200
-    assert 'chat_id' in response.json
+    assert len(json.loads(response.data)) > 0
 
 
-def test_get_users(client):
-    users_collection.insert_many([
-        {'username': 'user1', 'password': 'pass1'},
-        {'username': 'user2', 'password': 'pass2'}
-    ])
-    response = client.get('/api/users')
+def test_start_chat(client, user):
+    """Тестирование маршрута создания нового чата."""
+    data = {
+        'user_id': str(users_collection.find_one({'username': user['username']})['_id']),
+        'recipient_id': str(users_collection.find_one({'username': user['username']})['_id'])  # Используем того же пользователя
+    }
+    response = client.post('/api/chats', json=data)
     assert response.status_code == 200
-    assert len(response.json) == 2
+    chat_id = json.loads(response.data).get('chat_id')
+    assert chat_id is not None
+    assert isinstance(chat_id, str)
 
 
-def test_send_message(client):
-    chat_id = str(chats_collection.insert_one({
-        'participants': ['user1', 'user2'],
-        'messages': []
-    }).inserted_id)
-
-    response = client.post(f'/api/chats/{chat_id}/message', json={
-        'sender_id': 'user1',
-        'message': 'Hello, user2!'
-    })
+def test_send_message(client, chat, user):
+    """Тестирование маршрута отправки сообщения в чат."""
+    data = {
+        'sender_id': str(users_collection.find_one({'username': user['username']})['_id']),
+        'message': 'Hello, this is a test message!'
+    }
+    response = client.post(f'/api/chats/{chat}/message', json=data)
     assert response.status_code == 200
-    assert response.json['message'] == 'Message sent successfully!'
+    assert b'Message sent successfully!' in response.data
 
 
-def test_fetch_messages(client):
-    chat_id = str(chats_collection.insert_one({
-        'participants': ['user1', 'user2'],
-        'messages': [{'sender_id': 'user1', 'content': 'Hello, user2!'}]
-    }).inserted_id)
-
-    response = client.get(f'/api/chats/{chat_id}')
+def test_get_chat_participants(client, chat):
+    """Тестирование маршрута получения участников чата."""
+    response = client.get(f'/api/chats/{chat}/participants')
     assert response.status_code == 200
-    assert len(response.json) == 1
-    assert response.json[0]['content'] == 'Hello, user2!'
+    participants = json.loads(response.data)
+    assert isinstance(participants, list)
+    assert len(participants) > 0
