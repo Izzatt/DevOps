@@ -65,7 +65,7 @@ pipeline {
                 }
             }
         }
-        
+
         // 4. Деплой в Kubernetes
         stage('Деплой в Kubernetes') {
             steps {
@@ -79,7 +79,7 @@ pipeline {
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/confmap.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/nsmonitoring.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/grafana-service.yaml
-                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-confing.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-config.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-service.yaml
                     kubectl rollout status deployment/backend-deployment --timeout=60s
                     kubectl rollout status deployment/frontend-deployment --timeout=60s
