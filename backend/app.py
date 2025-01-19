@@ -28,6 +28,11 @@ users_collection = db['users']
 chats_collection = db['chats']
 
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return 'OK', 200
+
+
 # Метрики Prometheus
 REQUEST_COUNT = Counter(
     'api_request_count', 'Total API Requests', [
