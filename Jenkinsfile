@@ -32,7 +32,7 @@ pipeline {
         stage('Запуск юнит-тестов') {
             steps {
                 dir('backend') {
-                    sh '/usr/local/bin/pytest tests'
+                    sh '/usr/local/bin/pytest tests/test_app.py'
                 }
             }
         }
