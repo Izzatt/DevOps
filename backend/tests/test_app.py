@@ -5,9 +5,11 @@ import json
 from bson import ObjectId
 from pymongo import MongoClient
 from app import app, users_collection, chats_collection  # Предполагается, что app и коллекции доступны из app.py
+import os
+
 
 # Настройка подключения к MongoDB Atlas
-MONGO_URI = 'mongodb+srv://izzat:dbpa$$word1234@cluster0.cvhz3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+MONGO_URI = os.getenv('MONGO_URI')
 client = MongoClient(MONGO_URI)
 db = client['chat_app']
 users_collection = db['users']

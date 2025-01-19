@@ -6,6 +6,7 @@ pipeline {
         DOCKER_IMAGE_FRONTEND = 'izya69/frontend:latest' // Имя образа для frontend
         KUBECONFIG = credentials('kubeconfig-file') // Файл конфигурации Kubernetes
         PATH = "/usr/local/bin:$PATH"
+        MONGO_URI = "mongodb+srv://izzat:dbpa$$word1234@cluster0.cvhz3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
     }
     stages {
         // 1. Линтинг
