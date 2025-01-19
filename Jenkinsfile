@@ -71,16 +71,16 @@ pipeline {
             steps {
                 withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
                     sh """
-                    kubectl apply -f backend-deployment.yaml
-                    kubectl apply -f frontend-deployment.yaml
-                    kubectl apply -f backend-service.yaml
-                    kubectl apply -f frontend-service.yaml
-                    kubectl apply -f secrets.yaml
-                    kubectl apply -f confmap.yaml
-                    kubectl apply -f nsmonitoring.yaml
-                    kubectl apply -f grafana-service.yaml
-                    kubectl apply -f prometheus-confing.yaml
-                    kubectl apply -f prometheus-service.yaml
+                    kubectl apply -f devops/backend-deployment.yaml
+                    kubectl apply -f devops/frontend-deployment.yaml
+                    kubectl apply -f devops/backend-service.yaml
+                    kubectl apply -f devops/frontend-service.yaml
+                    kubectl apply -f devops/secrets.yaml
+                    kubectl apply -f devops/confmap.yaml
+                    kubectl apply -f devops/nsmonitoring.yaml
+                    kubectl apply -f devops/grafana-service.yaml
+                    kubectl apply -f devops/prometheus-confing.yaml
+                    kubectl apply -f devops/prometheus-service.yaml
                     kubectl rollout status deployment/backend-deployment --timeout=60s
                     kubectl rollout status deployment/frontend-deployment --timeout=60s
                     """
