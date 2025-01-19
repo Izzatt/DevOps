@@ -4,10 +4,10 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import '../styles.css';
 
-const socket = io('backend.default.svc.cluster.local:5000/socket.io/');
 
 
 function ChatPage() {
+    const socket = io(`${process.env.REACT_APP_API_URL}/socket.io/`);
     const { chatId } = useParams(); 
     const [messages, setMessages] = useState([]); 
     const [message, setMessage] = useState('');
