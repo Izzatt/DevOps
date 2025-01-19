@@ -45,8 +45,7 @@ pipeline {
                     steps {
                         dir('backend') {
                             sh """
-                            docker buildx create --use
-                            docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_IMAGE_BACKEND .
+                            docker build -t $DOCKER_IMAGE_BACKEND .
                             docker login -u $DOCKERHUB_CREDENTIALS_USR -p $DOCKERHUB_CREDENTIALS_PSW
                             docker push $DOCKER_IMAGE_BACKEND
                             """
@@ -57,8 +56,7 @@ pipeline {
                     steps {
                         dir('frontend') {
                             sh """
-                            docker buildx create --use
-                            docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKER_IMAGE_FRONTEND .
+                            docker build -t $DOCKER_IMAGE_FRONTEND .
                             docker login -u $DOCKERHUB_CREDENTIALS_USR -p $DOCKERHUB_CREDENTIALS_PSW
                             docker push $DOCKER_IMAGE_FRONTEND
                             """
