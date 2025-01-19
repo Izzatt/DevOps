@@ -5,16 +5,24 @@ import json
 from bson import ObjectId
 from pymongo import MongoClient
 from app import app  # Предполагается, что app и коллекции доступны из app.py
-
+import os
 
 @pytest.fixture(scope='module')
 def setup_db():
     # Чтение переменной окружения для MongoDB Atlas URI
-    MONGO_URI = ('mongodb+srv://izzat:dbpa$$word1234@cluster0.cvhz3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+    MONGO_URI = os.getenv('MONGO_URI')
+    if not MONGO_URI:
+        raise ValueError("MONGO_URI is not set")
     client = MongoClient(MONGO_URI)
     db = client['chat_app']
     users_collection = db['users']
     chats_collection = db['chats']
+
+    try:
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)  # Тайм-аут на подключение
+        client.server_info()  # Пробуем получить информацию о сервере, чтобы убедиться в успешном подключении
+    except Exception as e:
+        raise ValueError(f"Failed to connect to MongoDB: {e}")
 
     # Очистка коллекций перед каждым тестом
     users_collection.delete_many({})
