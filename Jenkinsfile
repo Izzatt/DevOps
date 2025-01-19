@@ -70,22 +70,20 @@ pipeline {
         stage('Деплой в Kubernetes') {
             steps {
                 withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-                    dir('devops') {
-                        sh """
-                        kubectl apply -f backend-deployment.yaml
-                        kubectl apply -f frontend-deployment.yaml
-                        kubectl apply -f backend-service.yaml
-                        kubectl apply -f frontend-service.yaml
-                        kubectl apply -f secrets.yaml
-                        kubectl apply -f confmap.yaml
-                        kubectl apply -f nsmonitoring.yaml
-                        kubectl apply -f grafana-service.yaml
-                        kubectl apply -f prometheus-confing.yaml
-                        kubectl apply -f prometheus-service.yaml
-                        kubectl rollout status deployment/backend-deployment --timeout=60s
-                        kubectl rollout status deployment/frontend-deployment --timeout=60s
-                        """
-                    }
+                    sh """
+                    kubectl apply -f /home/izzat/devops/backend-deployment.yaml
+                    kubectl apply -f /home/izzat/devops/frontend-deployment.yaml
+                    kubectl apply -f /home/izzat/devops/backend-service.yaml
+                    kubectl apply -f /home/izzat/devops/frontend-service.yaml
+                    kubectl apply -f /home/izzat/devops/secrets.yaml
+                    kubectl apply -f /home/izzat/devops/confmap.yaml
+                    kubectl apply -f /home/izzat/devops/nsmonitoring.yaml
+                    kubectl apply -f /home/izzat/devops/grafana-service.yaml
+                    kubectl apply -f /home/izzat/devops/prometheus-confing.yaml
+                    kubectl apply -f /home/izzat/devops/prometheus-service.yaml
+                    kubectl rollout status deployment/backend-deployment --timeout=60s
+                    kubectl rollout status deployment/frontend-deployment --timeout=60s
+                    """
                 }
             }
         }
