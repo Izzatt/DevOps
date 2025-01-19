@@ -1,19 +1,29 @@
-from gevent import monkey  
-monkey.patch_all()
+from gevent import monkey  # noqa: E402
+monkey.patch_all()  # noqa: E402
 import pytest
 import json
 from bson import ObjectId
 from pymongo import MongoClient
-from app import app, users_collection, chats_collection  # Предполагается, что app и коллекции доступны из app.py
+from app import app  # Предполагается, что app и коллекции доступны из app.py
 import os
 
+@pytest.fixture(scope='module')
+def setup_db():
+    # Чтение переменной окружения для MongoDB Atlas URI
+    MONGO_URI = os.getenv('MONGO_URI')
+    client = MongoClient(MONGO_URI)
+    db = client['chat_app']
+    users_collection = db['users']
+    chats_collection = db['chats']
 
-# Настройка подключения к MongoDB Atlas
-MONGO_URI = os.getenv('MONGO_URI')
-client = MongoClient(MONGO_URI)
-db = client['chat_app']
-users_collection = db['users']
-chats_collection = db['chats']
+    # Очистка коллекций перед каждым тестом
+    users_collection.delete_many({})
+    chats_collection.delete_many({})
+
+    yield client, db, users_collection, chats_collection
+
+    # Закрытие подключения после завершения всех тестов
+    client.close()
 
 @pytest.fixture
 def client():
@@ -21,13 +31,8 @@ def client():
     with app.test_client() as client:
         yield client
 
-@pytest.fixture(autouse=True)
-def cleanup():
-    # Очистка коллекций перед каждым тестом
-    users_collection.delete_many({})
-    chats_collection.delete_many({})
-
-def test_register(client):
+def test_register(client, setup_db):
+    _, _, users_collection, _ = setup_db
     response = client.post('/api/users/register', json={
         'username': 'testuser',
         'password': 'testpassword'
@@ -36,7 +41,8 @@ def test_register(client):
     data = json.loads(response.data)
     assert 'User registered successfully!' in data['message']
 
-def test_login(client):
+def test_login(client, setup_db):
+    _, _, users_collection, _ = setup_db
     client.post('/api/users/register', json={
         'username': 'testuser',
         'password': 'testpassword'
@@ -49,8 +55,9 @@ def test_login(client):
     data = json.loads(response.data)
     assert 'Login successful!' in data['message']
 
-def test_get_chats(client):
-    # Регистрация пользователей
+def test_get_chats(client, setup_db):
+    _, _, users_collection, chats_collection = setup_db
+
     client.post('/api/users/register', json={
         'username': 'testuser1',
         'password': 'testpassword'
@@ -60,23 +67,20 @@ def test_get_chats(client):
         'password': 'testpassword'
     })
 
-    # Логин и получение user_id
     login_response = client.post('/api/users/login', json={
         'username': 'testuser1',
         'password': 'testpassword'
     })
     user_id = json.loads(login_response.data)['user_id']
 
-    # Создание чата с валидными ObjectId
     recipient_id = str(ObjectId())
-    users_collection.insert_one({'_id': ObjectId(recipient_id), 'username': 'testuser2', 'password': 'testpassword'})  # Добавление получателя в коллекцию users
+    users_collection.insert_one({'_id': ObjectId(recipient_id), 'username': 'testuser2', 'password': 'testpassword'})
     chat_response = client.post('/api/chats', json={
         'user_id': user_id,
         'recipient_id': recipient_id
     })
     chat_id = json.loads(chat_response.data)['chat_id']
 
-    # Получение списка чатов
     response = client.get(f'/api/chats?user_id={user_id}')
     assert response.status_code == 200
     data = json.loads(response.data)
