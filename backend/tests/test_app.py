@@ -6,10 +6,13 @@ from bson import ObjectId
 from pymongo import MongoClient
 from app import app  # Предполагается, что app и коллекции доступны из app.py
 import os
+from dotenv import load_dotenv
+
 
 @pytest.fixture(scope='module')
 def setup_db():
     # Чтение переменной окружения для MongoDB Atlas URI
+    load_dotenv()
     MONGO_URI = os.getenv('MONGO_URI')
     client = MongoClient(MONGO_URI)
     db = client['chat_app']
