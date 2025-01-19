@@ -21,8 +21,8 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Настройка MongoDB
-uri = os.getenv('MONGO_URI')
-client = MongoClient(uri)
+MONGO_URI = os.getenv('MONGO_URI')
+client = MongoClient(MONGO_URI)
 db = client['chat_app']
 users_collection = db['users']
 chats_collection = db['chats']
