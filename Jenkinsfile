@@ -65,7 +65,14 @@ pipeline {
                 }
             }
         }
-
+        stage('Копирование файлов') {
+            steps {
+                script {
+                    // Копирование файлов в рабочую директорию Jenkins
+                    sh 'cp /home/izzat/devops/*.yaml .'
+                }
+            }
+        }
         // 4. Деплой в Kubernetes
         stage('Деплой в Kubernetes') {
             steps {
