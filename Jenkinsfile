@@ -65,29 +65,22 @@ pipeline {
                 }
             }
         }
-        stage('Копирование файлов') {
-            steps {
-                script {
-                    // Копирование файлов в рабочую директорию Jenkins
-                    sh 'cp /home/izzat/devops/*.yaml .'
-                }
-            }
-        }
+        
         // 4. Деплой в Kubernetes
         stage('Деплой в Kubernetes') {
             steps {
                 withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
                     sh """
-                    kubectl apply -f /home/izzat/devops/backend-deployment.yaml
-                    kubectl apply -f /home/izzat/devops/frontend-deployment.yaml
-                    kubectl apply -f /home/izzat/devops/backend-service.yaml
-                    kubectl apply -f /home/izzat/devops/frontend-service.yaml
-                    kubectl apply -f /home/izzat/devops/secrets.yaml
-                    kubectl apply -f /home/izzat/devops/confmap.yaml
-                    kubectl apply -f /home/izzat/devops/nsmonitoring.yaml
-                    kubectl apply -f /home/izzat/devops/grafana-service.yaml
-                    kubectl apply -f /home/izzat/devops/prometheus-confing.yaml
-                    kubectl apply -f /home/izzat/devops/prometheus-service.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/backend-deployment.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/frontend-deployment.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/backend-service.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/frontend-service.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/secrets.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/confmap.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/nsmonitoring.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/grafana-service.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-confing.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-service.yaml
                     kubectl rollout status deployment/backend-deployment --timeout=60s
                     kubectl rollout status deployment/frontend-deployment --timeout=60s
                     """
