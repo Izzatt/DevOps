@@ -111,13 +111,13 @@ Contains the application source code:
      ```bash
      cd backend
      docker build -t backend ./backend
-     docker run -p 5000:5000 chat-backend
+     docker run -p 5000:5000 backend
      ```
    - Frontend (optional):
      ```bash
      cd frontend
      docker build -t frontend ./frontend
-     docker run -p 80:80 chat-frontend
+     docker run -p 80:80 frontend
      ```
 
 3. **Deploy with Kubernetes**:
