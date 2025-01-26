@@ -110,13 +110,13 @@ Contains the application source code:
    - Backend:
      ```bash
      cd backend
-     docker build -t chat-backend .
+     docker build -t backend ./backend
      docker run -p 5000:5000 chat-backend
      ```
    - Frontend (optional):
      ```bash
      cd frontend
-     docker build -t chat-frontend .
+     docker build -t frontend ./frontend
      docker run -p 80:80 chat-frontend
      ```
 
