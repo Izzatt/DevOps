@@ -7,6 +7,7 @@ from pymongo import MongoClient
 from app import app  # Предполагается, что app и коллекции доступны из app.py
 import os
 
+
 @pytest.fixture(scope='module')
 def setup_db():
     # Чтение переменной окружения для MongoDB Atlas URI
@@ -19,8 +20,8 @@ def setup_db():
     chats_collection = db['chats']
 
     try:
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)  # Тайм-аут на подключение
-        client.server_info()  # Пробуем получить информацию о сервере, чтобы убедиться в успешном подключении
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        client.server_info()
     except Exception as e:
         raise ValueError(f"Failed to connect to MongoDB: {e}")
 
@@ -33,11 +34,13 @@ def setup_db():
     # Закрытие подключения после завершения всех тестов
     client.close()
 
+
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
     with app.test_client() as client:
         yield client
+
 
 def test_register(client, setup_db):
     _, _, users_collection, _ = setup_db
@@ -48,6 +51,7 @@ def test_register(client, setup_db):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert 'User registered successfully!' in data['message']
+
 
 def test_login(client, setup_db):
     _, _, users_collection, _ = setup_db
@@ -62,6 +66,7 @@ def test_login(client, setup_db):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert 'Login successful!' in data['message']
+
 
 def test_get_chats(client, setup_db):
     _, _, users_collection, chats_collection = setup_db
@@ -82,7 +87,9 @@ def test_get_chats(client, setup_db):
     user_id = json.loads(login_response.data)['user_id']
 
     recipient_id = str(ObjectId())
-    users_collection.insert_one({'_id': ObjectId(recipient_id), 'username': 'testuser2', 'password': 'testpassword'})
+    users_collection.insert_one
+    ({'_id': ObjectId(recipient_id),
+      'username': 'testuser2', 'password': 'testpassword'})
     chat_response = client.post('/api/chats', json={
         'user_id': user_id,
         'recipient_id': recipient_id
