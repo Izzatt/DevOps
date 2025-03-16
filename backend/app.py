@@ -1,240 +1,96 @@
 from gevent import monkey  # noqa: E402
 monkey.patch_all()  # noqa: E402
+import pytest
+import json
 from bson import ObjectId
-from pymongo.mongo_client import MongoClient
-from werkzeug.security import generate_password_hash, check_password_hash
-from prometheus_client import Counter, Histogram, generate_latest
-from flask_socketio import SocketIO, join_room
-from flask_cors import CORS
-from flask import Flask, request, jsonify, Response
-from dotenv import load_dotenv
-import time
+from pymongo import MongoClient
+from app import app  # Предполагается, что app и коллекции доступны из app.py
 import os
 
+@pytest.fixture(scope='module')
+def setup_db():
+    # Чтение переменной окружения для MongoDB Atlas URI
+    MONGO_URI = os.getenv('MONGO_URI')
+    if not MONGO_URI:
+        raise ValueError("MONGO_URI is not set")
+    client = MongoClient(MONGO_URI)
+    db = client['test_db']
+    users_collection = db['users']
+    chats_collection = db['chats']
 
-# Инициализация приложения Flask
-app = Flask(__name__)
-load_dotenv()
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
-CORS(app, resources={r"/*": {"origins": "*"}})
-
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-# Настройка MongoDB
-MONGO_URI = os.getenv('MONGO_URI')
-client = MongoClient(MONGO_URI)
-db = client['chat_app']
-users_collection = db['users']
-chats_collection = db['chats']
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    return 'OK', 200
-
-
-# Метрики Prometheus
-REQUEST_COUNT = Counter(
-    'api_request_count', 'Total API Requests', [
-        'method', 'endpoint', 'status_code'])
-REQUEST_LATENCY = Histogram(
-    'api_request_latency_seconds', 'Latency of API Requests', [
-        'method', 'endpoint'])
-
-
-@app.before_request
-def start_timer():
-    """Инициализация таймера перед каждым запросом."""
-    request.start_time = time.time()
-
-
-@app.after_request
-def log_request(response):
-    """Логирование метрик после обработки запроса."""
-    latency = time.time() - request.start_time
-    REQUEST_COUNT.labels(
-        method=request.method,
-        endpoint=request.path,
-        status_code=response.status_code).inc()
-    REQUEST_LATENCY.labels(
-        method=request.method, endpoint=request.path
-    ).observe(latency)
-    return response
-
-
-@app.route('/metrics')
-def metrics():
-    """Экспорт метрик Prometheus."""
-    return Response(generate_latest(), content_type='text/plain')
-
-
-@app.route('/api/users/register', methods=['POST'])
-def register():
-    """Регистрация нового пользователя."""
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    if users_collection.find_one({'username': username}):
-        return jsonify({'error': 'Username already exists'}), 400
-
-    hashed_password = generate_password_hash(password)
-    users_collection.insert_one(
-        {'username': username, 'password': hashed_password})
-    return jsonify({'message': 'User registered successfully!'})
-
-
-@app.route('/api/users/login', methods=['POST'])
-def login():
-    """Авторизация пользователя."""
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    user = users_collection.find_one({'username': username})
-    if user and check_password_hash(user['password'], password):
-        return jsonify({'message': 'Login successful!',
-                       'user_id': str(user["_id"])})
-    return jsonify({'error': 'Invalid credentials'}), 401
-
-
-@app.route('/api/chats', methods=['GET'])
-def get_chats():
-    """Получение списка чатов пользователя."""
-    user_id = request.args.get('user_id')
-    chats = chats_collection.find({'participants': user_id})
-
-    chat_list = [
-        {
-            'chat_id': str(chat['_id']),
-            'participants': [
-                {
-                    'id': str(participant_id),
-                    'username': users_collection.find_one
-                    ({'_id': ObjectId(participant_id)})['username']
-                }
-                for participant_id in chat['participants']
-            ]
-        }
-        for chat in chats
-    ]
-    return jsonify(chat_list)
-
-
-@app.route('/api/users', methods=['GET'])
-def get_users():
-    """Получение списка всех пользователей."""
-    users = users_collection.find({}, {'_id': 1, 'username': 1})
-    return jsonify([{'id': str(user['_id']),
-                     'username': user['username']} for user in users])
-
-
-@app.route('/api/chats', methods=['POST'])
-def start_chat():
-    """Создание нового чата."""
-    data = request.json
-    user_id = data.get('user_id')
-    recipient_id = data.get('recipient_id')
-
-    if not users_collection.find_one({'_id': ObjectId(user_id)}) or \
-       not users_collection.find_one({'_id': ObjectId(recipient_id)}):
-        return jsonify({'error': 'User(s) not found'}), 400
-
-    chat = {'participants': [user_id, recipient_id], 'messages': []}
-    result = chats_collection.insert_one(chat)
-    return jsonify({'chat_id': str(result.inserted_id)})
-
-
-@app.route('/api/chats/<chat_id>/message', methods=['POST'])
-def send_message(chat_id):
-    """Отправка сообщения в чат."""
-    data = request.json
-    sender_id = data.get('sender_id')
-    message = data.get('message')
-
-    if not sender_id or not message:
-        return jsonify({'error': 'Missing sender_id or message'}), 400
-
-    chats_collection.update_one(
-        {'_id': ObjectId(chat_id)},
-        {'$push': {'messages': {'sender_id': sender_id, 'content': message}}}
-    )
-    return jsonify({'message': 'Message sent successfully!'})
-
-
-@app.route('/api/chats/<chat_id>/participants', methods=['GET'])
-def get_chat_participants(chat_id):
-    """Получение участников чата по ID."""
     try:
-        chat = chats_collection.find_one({'_id': ObjectId(chat_id)})
-        if not chat:
-            return jsonify({'error': 'Chat not found'}), 404
-
-        participants = []
-        for participant_id in chat['participants']:
-            user = users_collection.find_one(
-                {'_id': ObjectId(participant_id)},
-                {'_id': 1, 'username': 1}
-            )
-            if user:
-                participants.append(
-                    {'id': str(user['_id']), 'username': user['username']})
-
-        return jsonify(participants)
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)  # Тайм-аут на подключение
+        client.server_info()  # Пробуем получить информацию о сервере, чтобы убедиться в успешном подключении
     except Exception as e:
-        print(f"Error fetching participants for chat {chat_id}: {e}")
-        return jsonify({'error': 'Failed to fetch participants'}), 500
+        raise ValueError(f"Failed to connect to MongoDB: {e}")
 
+    # Очистка коллекций перед каждым тестом
+    users_collection.delete_many({})
+    chats_collection.delete_many({})
 
-@app.route('/api/chats/<chat_id>', methods=['GET'])
-def fetch_messages(chat_id):
-    """Получение сообщений из чата по ID."""
-    try:
-        chat = chats_collection.find_one({'_id': ObjectId(chat_id)})
-        if not chat:
-            return jsonify({'error': 'Chat not found'}), 404
+    yield client, db, users_collection, chats_collection
 
-        messages_with_usernames = []
-        for message in chat.get('messages', []):
-            sender = users_collection.find_one(
-                {'_id': ObjectId(message['sender_id'])})
-            messages_with_usernames.append({
-                'sender_username': sender['username'] if sender else 'Unknown',
-                'content': message['content']
-            })
+    # Закрытие подключения после завершения всех тестов
+    client.close()
 
-        return jsonify(messages_with_usernames)
-    except Exception as e:
-        print(f"Error fetching messages for chat_id {chat_id}: {e}")
-        return jsonify({'error': 'Invalid chat ID format'}), 400
+@pytest.fixture
+def client():
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
 
+def test_register(client, setup_db):
+    _, _, users_collection, _ = setup_db
+    response = client.post('/api/users/register', json={
+        'username': 'testuser',
+        'password': 'testpassword'
+    })
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert 'User registered successfully!' in data['message']
 
-@socketio.on('join')
-def on_join(data):
-    """Обработка события подключения к чату."""
-    join_room(data['chat_id'])
+def test_login(client, setup_db):
+    _, _, users_collection, _ = setup_db
+    client.post('/api/users/register', json={
+        'username': 'testuser',
+        'password': 'testpassword'
+    })
+    response = client.post('/api/users/login', json={
+        'username': 'testuser',
+        'password': 'testpassword'
+    })
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert 'Login successful!' in data['message']
 
+def test_get_chats(client, setup_db):
+    _, _, users_collection, chats_collection = setup_db
 
-@socketio.on('message')
-def handle_message(data):
-    """Обработка сообщения в реальном времени."""
-    chat_id = data.get('chat_id')
-    message = data.get('message')
-    sender_id = data.get('sender_id')
+    client.post('/api/users/register', json={
+        'username': 'testuser1',
+        'password': 'testpassword'
+    })
+    client.post('/api/users/register', json={
+        'username': 'testuser2',
+        'password': 'testpassword'
+    })
 
-    if chat_id and message and sender_id:
-        chats_collection.update_one(
-            {'_id': ObjectId(chat_id)},
-            {
-                '$push': {
-                    'messages': {
-                        'sender_id': sender_id,
-                        'content': message
-                    }
-                }
-            }
-        )
+    login_response = client.post('/api/users/login', json={
+        'username': 'testuser1',
+        'password': 'testpassword'
+    })
+    user_id = json.loads(login_response.data)['user_id']
 
+    recipient_id = str(ObjectId())
+    users_collection.insert_one({'_id': ObjectId(recipient_id), 'username': 'testuser2', 'password': 'testpassword'})
+    chat_response = client.post('/api/chats', json={
+        'user_id': user_id,
+        'recipient_id': recipient_id
+    })
+    chat_id = json.loads(chat_response.data)['chat_id']
 
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
+    response = client.get(f'/api/chats?user_id={user_id}')
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert len(data) > 0
+    assert data[0]['chat_id'] == chat_id

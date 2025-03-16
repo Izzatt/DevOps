@@ -71,13 +71,15 @@ pipeline {
             steps {
                 withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
                     sh """
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/nsmonitoring.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/secrets.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/confmap.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/backend-deployment.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/frontend-deployment.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/backend-service.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/frontend-service.yaml
-                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/secrets.yaml
-                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/confmap.yaml
-                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/nsmonitoring.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/grafana-deployment.yaml
+                    kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-deployment.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/grafana-service.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-config.yaml
                     kubectl apply -f /var/lib/jenkins/workspace/job/devops/prometheus-service.yaml

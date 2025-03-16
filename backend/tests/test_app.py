@@ -4,37 +4,38 @@ import pytest
 import json
 from bson import ObjectId
 from pymongo import MongoClient
-from app import app  # Предполагается, что app и коллекции доступны из app.py
 import os
+import importlib
 
 @pytest.fixture(scope='module')
 def setup_db():
-    # Чтение переменной окружения для MongoDB Atlas URI
-    MONGO_URI = os.getenv('MONGO_URI')
-    if not MONGO_URI:
-        raise ValueError("MONGO_URI is not set")
-    client = MongoClient(MONGO_URI)
-    db = client['chat_app']
-    users_collection = db['users']
-    chats_collection = db['chats']
+    # Set TESTING environment variable
+    os.environ['TESTING'] = 'true'
 
-    try:
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)  # Тайм-аут на подключение
-        client.server_info()  # Пробуем получить информацию о сервере, чтобы убедиться в успешном подключении
-    except Exception as e:
-        raise ValueError(f"Failed to connect to MongoDB: {e}")
+    # Динамический импорт app
+    app_module = importlib.import_module('app')  # Импортируем app
+    app = app_module.app  # Получаем объект Flask из модуля app
+    client = app.test_client()
+    
+    # Use the test database
+    test_db = client.application.config['MONGO_DB']  # Используем тестовую базу данных
+    users_collection = test_db['users']
+    chats_collection = test_db['chats']
 
     # Очистка коллекций перед каждым тестом
     users_collection.delete_many({})
     chats_collection.delete_many({})
 
-    yield client, db, users_collection, chats_collection
+    yield client, test_db, users_collection, chats_collection
 
-    # Закрытие подключения после завершения всех тестов
-    client.close()
+    # Clean up after tests
+    users_collection.delete_many({})
+    chats_collection.delete_many({})
 
 @pytest.fixture
 def client():
+    app_module = importlib.import_module('app')  # Динамически импортируем app
+    app = app_module.app  # Получаем объект Flask
     app.config['TESTING'] = True
     with app.test_client() as client:
         yield client
